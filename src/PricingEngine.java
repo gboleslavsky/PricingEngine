@@ -5,8 +5,11 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
 import java.util.HashMap;
 import java.util.Comparator;
+import java.util.Collections;
+import java.util.stream.Collectors;
 import java.io.InputStream;
 
 public final class PricingEngine {
@@ -72,6 +75,7 @@ public final class PricingEngine {
     static final class RawInput{
         public List<ProductSupplyDemand> productSupplyDemands;
         public List<SurveyDataItem> dataItems;
+        public Map<String, SupplyDemand> supplyDemandsByProduct;
 
         RawInput(List<String> strProductSupplyDemands, List<String> strSurveyDataItems) {
             this.productSupplyDemands = new ArrayList<>(strProductSupplyDemands.size());
@@ -79,11 +83,17 @@ public final class PricingEngine {
                 this.productSupplyDemands.add(new ProductSupplyDemand(spsd));
             }
 
+            this.supplyDemandsByProduct = new HashMap<>();
+            for(ProductSupplyDemand psd : this.productSupplyDemands){
+                supplyDemandsByProduct.put(psd.productCode, psd.supplyDemand);
+            }
+
             this.dataItems = new ArrayList<>(strSurveyDataItems.size());
             for (String ssdi : strSurveyDataItems) {
                 this.dataItems.add(new SurveyDataItem(ssdi));
             }
         }
+
 
         public String toString() {
             String dis = "";
@@ -172,6 +182,17 @@ public final class PricingEngine {
         }
     }
 
+    public void recordSupplyDemand(RawInput ri){
+        for(ProductSupplyDemand psd : ri.productSupplyDemands){
+            supplyDemandByProduct.put(psd.productCode, psd.supplyDemand);
+        }
+    }
+
+    private Map<String, SupplyDemand> supplyDemandByProduct = new HashMap<>();
+    public SupplyDemand supplyDemand(String productCode){
+        return supplyDemandByProduct.get(productCode);
+    }
+
     public static final SupplyDemand HH = new SupplyDemand(HIGH, HIGH);
     public static final SupplyDemand HL = new SupplyDemand(HIGH, LOW);
     public static final SupplyDemand LH = new SupplyDemand(LOW, HIGH);
@@ -191,23 +212,36 @@ public final class PricingEngine {
         priceMultiplierBySupplyDemand.put(HL, 0.95);
     }
 
-    protected static class priceFrequencyComparator implements Comparator{
-        public int compare( Object priceFrequency1, Object priceFrequency2){
-            Map.Entry<Double, Integer> pf1 = (Map.Entry<Double, Integer>) priceFrequency1;
-            Map.Entry<Double, Integer> pf2 = (Map.Entry<Double, Integer>) priceFrequency1;
-            int prelimResult = pf1.getValue() - pf2.getValue();//use frequency first
+    public static Comparator<Map.Entry<Double, Integer>> priceFrequencyComparator =
+        new Comparator<Map.Entry<Double, Integer>>() {
+        // recommend most frequently occurring price.
+        // If multiple prices occur frequen
+            // tly, the least amongst them is chosen
+
+        public int compare(Map.Entry<Double, Integer> pf1, Map.Entry<Double, Integer> pf2) {
+            int prelimResult = pf1.getValue() - pf2.getValue(); //use frequency first
             if (prelimResult == 0)
                 return (int)(pf1.getKey() - pf2.getKey());      //if same frequency, use lowest price
             else
                 return prelimResult;
-        }
+
+        }};
+
+    public Double priceByProduct(String productCode){
+        Set<Map.Entry<Double, Integer>> priceFrequenciesMap = priceFrequencyByProduct.get(productCode).entrySet();
+        List<Map.Entry<Double, Integer>> priceFrequencies = priceFrequenciesMap.stream().collect(Collectors.toList());
+        Collections.sort(priceFrequencies, priceFrequencyComparator);
+        Double rawPrice = priceFrequencies.get(0).getKey();
+        return rawPrice * (priceMultiplierBySupplyDemand.get(supplyDemandByProduct.get(productCode)));
     }
 
 
     public static void main(String[] parms){
         PricingEngine pE = new PricingEngine();
         RawInput rawInput = pE.readInput();
-        pE.calculatePriceFrequencies(pE.cleanSurveyData(rawInput));
+        List <SurveyDataItem> csd = pE.cleanSurveyData(rawInput);
+        pE.calculatePriceFrequencies(csd);
+        pE.recordSupplyDemand(rawInput);
     }
 
 
