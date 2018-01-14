@@ -6,6 +6,7 @@ import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Comparator;
 import java.io.InputStream;
 
 public final class PricingEngine {
@@ -150,19 +151,19 @@ public final class PricingEngine {
         return cleanedSurveyData;
     }
 
-    private Map<String, Map<String, Integer>> priceFrequencyByProduct = new HashMap<>();
+    private Map<String, Map<Double, Integer>> priceFrequencyByProduct = new HashMap<>();
     public void recordNewPrice(SurveyDataItem di){
         if (priceFrequencyByProduct.get(di.productCode) == null) {
             priceFrequencyByProduct.put(di.productCode, new HashMap<>());
         }
         if (priceFrequencyByProduct.get(di.productCode) //Map<String, Integer>
-                                            .get(String.valueOf(di.price)) == null){
-            priceFrequencyByProduct.get(di.productCode).put(String.valueOf(di.price), 0);
+                                            .get(di.price) == null){
+            priceFrequencyByProduct.get(di.productCode).put(di.price, 0);
         }
         Integer currentFrequency = (priceFrequencyByProduct.get(di.productCode)
-                                                                .get(String.valueOf(di.price)));
+                                                                .get(di.price));
         priceFrequencyByProduct.get(di.productCode)
-                                    .put(String.valueOf(di.price), currentFrequency++);
+                                    .put(di.price, currentFrequency++);
     }
 
     public void calculatePriceFrequencies(List<SurveyDataItem> cleanSurveyData){
@@ -175,6 +176,32 @@ public final class PricingEngine {
     public static final SupplyDemand HL = new SupplyDemand(HIGH, LOW);
     public static final SupplyDemand LH = new SupplyDemand(LOW, HIGH);
     public static final SupplyDemand LL = new SupplyDemand(LOW, LOW);
+
+    Map<SupplyDemand, Double> priceMultiplierBySupplyDemand = new HashMap<>();
+    public PricingEngine(){
+        /*
+        If Supply is High and Demand is High, Product is sold at same price as chosen price.
+        If Supply is Low and Demand is Low, Product is sold at 10 % more than chosen price.
+        If Supply is Low and Demand is High, Product is sold at 5 % more than chosen price.
+        If Supply is High and Demand is Low, Product is sold at 5 % less than chosen price.
+         */
+        priceMultiplierBySupplyDemand.put(HH, 1.0);
+        priceMultiplierBySupplyDemand.put(LL, 1.1);
+        priceMultiplierBySupplyDemand.put(LH, 1.05);
+        priceMultiplierBySupplyDemand.put(HL, 0.95);
+    }
+
+    protected static class priceFrequencyComparator implements Comparator{
+        public int compare( Object priceFrequency1, Object priceFrequency2){
+            Map.Entry<Double, Integer> pf1 = (Map.Entry<Double, Integer>) priceFrequency1;
+            Map.Entry<Double, Integer> pf2 = (Map.Entry<Double, Integer>) priceFrequency1;
+            int prelimResult = pf1.getValue() - pf2.getValue();//use frequency first
+            if (prelimResult == 0)
+                return (int)(pf1.getKey() - pf2.getKey());      //if same frequency, use lowest price
+            else
+                return prelimResult;
+        }
+    }
 
 
     public static void main(String[] parms){
