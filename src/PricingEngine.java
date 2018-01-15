@@ -31,6 +31,7 @@ public final class PricingEngine {
                     strSurveyDataItem.split(" ")[2]);
         }
 
+
         public String toString(){
             return this.productCode + " " + this.competitor + " " + this.price;
         }
@@ -47,8 +48,12 @@ public final class PricingEngine {
             this.demand = demand;
         }
 
-        public String toString(){
+        public String value(){
             return this.supply + this.demand;
+        }
+
+        public String toString(){
+            return value();
         }
     }
 
@@ -173,7 +178,7 @@ public final class PricingEngine {
         Integer currentFrequency = (priceFrequencyByProduct.get(di.productCode)
                                                                 .get(di.price));
         priceFrequencyByProduct.get(di.productCode)
-                                    .put(di.price, currentFrequency++);
+                                    .put(di.price, currentFrequency + 1);
     }
 
     public void calculatePriceFrequencies(List<SurveyDataItem> cleanSurveyData){
@@ -198,7 +203,7 @@ public final class PricingEngine {
     public static final SupplyDemand LH = new SupplyDemand(LOW, HIGH);
     public static final SupplyDemand LL = new SupplyDemand(LOW, LOW);
 
-    Map<SupplyDemand, Double> priceMultiplierBySupplyDemand = new HashMap<>();
+    Map<String, Double> priceMultiplierBySupplyDemand = new HashMap<>();
     public PricingEngine(){
         /*
         If Supply is High and Demand is High, Product is sold at same price as chosen price.
@@ -206,10 +211,10 @@ public final class PricingEngine {
         If Supply is Low and Demand is High, Product is sold at 5 % more than chosen price.
         If Supply is High and Demand is Low, Product is sold at 5 % less than chosen price.
          */
-        priceMultiplierBySupplyDemand.put(HH, 1.0);
-        priceMultiplierBySupplyDemand.put(LL, 1.1);
-        priceMultiplierBySupplyDemand.put(LH, 1.05);
-        priceMultiplierBySupplyDemand.put(HL, 0.95);
+        priceMultiplierBySupplyDemand.put(HH.value(), 1.0);
+        priceMultiplierBySupplyDemand.put(LL.value(), 1.1);
+        priceMultiplierBySupplyDemand.put(LH.value(), 1.05);
+        priceMultiplierBySupplyDemand.put(HL.value(), 0.95);
     }
 
     public static Comparator<Map.Entry<Double, Integer>> priceFrequencyComparator =
@@ -219,7 +224,7 @@ public final class PricingEngine {
             // tly, the least amongst them is chosen
 
         public int compare(Map.Entry<Double, Integer> pf1, Map.Entry<Double, Integer> pf2) {
-            int prelimResult = pf1.getValue() - pf2.getValue(); //use frequency first
+            int prelimResult = pf2.getValue() - pf1.getValue(); //use frequency first
             if (prelimResult == 0)
                 return (int)(pf1.getKey() - pf2.getKey());      //if same frequency, use lowest price
             else
@@ -227,21 +232,96 @@ public final class PricingEngine {
 
         }};
 
-    public Double priceByProduct(String productCode){
+    public Double price(String productCode){
         Set<Map.Entry<Double, Integer>> priceFrequenciesMap = priceFrequencyByProduct.get(productCode).entrySet();
         List<Map.Entry<Double, Integer>> priceFrequencies = priceFrequenciesMap.stream().collect(Collectors.toList());
         Collections.sort(priceFrequencies, priceFrequencyComparator);
         Double rawPrice = priceFrequencies.get(0).getKey();
-        return rawPrice * (priceMultiplierBySupplyDemand.get(supplyDemandByProduct.get(productCode)));
+        return rawPrice * (priceMultiplierBySupplyDemand.get(supplyDemandByProduct.get(productCode).value()));
+    }
+
+    public boolean quickTest1Passed(){
+        List<String> psds = new ArrayList<>();
+        psds.add("flashdrive H H");
+        psds.add("ssd L H");
+        List<String> surveyData = new ArrayList<>();
+        /*
+        flashdrive X 1.0
+        ssd X 10.0
+        flashdrive Y 0.9
+        flashdrive Z 1.1
+        ssd Y 12.5
+        */
+        surveyData.add("flashdrive X 1.0");
+        surveyData.add("flashdrive X 3.0");
+        surveyData.add("ssd X 10.0");
+        surveyData.add("flashdrive Y 0.9");
+        surveyData.add("flashdrive Y 0.9");
+        surveyData.add("flashdrive Z 1.1");
+        surveyData.add("flashdrive Z 1.1");
+        surveyData.add("ssd Y 12.5");
+        surveyData.add("ssd Y 2.5");
+        RawInput ri = new RawInput(psds, surveyData);
+        processInput(ri);
+
+        System.out.println("ssd"         +"\t\t" +price("ssd"));
+        System.out.println("flashdrive"  +"\t\t" +price("flashdrive"));
+        return true;
+    }
+
+    public boolean quickTest2Passed(){
+        List<String> psds = new ArrayList<>();
+        psds.add("mp3player H H");
+        psds.add("ssd L L");
+        List<String> surveyData = new ArrayList<>();
+        /*
+        mp3player H H
+        ssd L L
+        ssd W 11.0
+        ssd X 12.0
+        mp3player X 60.0
+        mp3player Y 20.0
+        mp3player Z 50.0
+        ssd V 10.0
+        ssd Y 11.0
+        ssd Z 12.0
+         */
+        surveyData.add("ssd W 11.0");
+        surveyData.add("ssd X 12.0");
+        surveyData.add("mp3player X 60.0");
+        surveyData.add("mp3player Y 20.0");
+        surveyData.add("mp3player Z 50.0");
+        surveyData.add("ssd V 10.0");
+        surveyData.add("ssd X 11.0");
+        surveyData.add("ssd W 12.0");
+        RawInput ri = new RawInput(psds, surveyData);
+        processInput(ri);
+
+        System.out.println("ssd"        +"\t\t" +price("ssd"));
+        System.out.println("mp3player"  +"\t\t" +price("mp3player"));
+        return false;
+    }
+
+    public void processInput(RawInput input){
+        List <SurveyDataItem> csd = cleanSurveyData(input);
+        calculatePriceFrequencies(csd);
+        recordSupplyDemand(input);
+
     }
 
 
     public static void main(String[] parms){
+        PricingEngine testPE = new PricingEngine();
+        if (!(testPE.quickTest1Passed() && testPE.quickTest2Passed())){
+            try {
+                throw new Exception("Pricing Engine has bugs");
+            } catch (Exception e) {
+                System.exit(1);
+            }
+        }
         PricingEngine pE = new PricingEngine();
         RawInput rawInput = pE.readInput();
-        List <SurveyDataItem> csd = pE.cleanSurveyData(rawInput);
-        pE.calculatePriceFrequencies(csd);
-        pE.recordSupplyDemand(rawInput);
+        pE.processInput(rawInput);
     }
 
 
