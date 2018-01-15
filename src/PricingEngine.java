@@ -266,7 +266,7 @@ public final class PricingEngine {
 
         System.out.println("ssd"         +"\t\t" +price("ssd"));
         System.out.println("flashdrive"  +"\t\t" +price("flashdrive"));
-        return true;
+        return price("ssd")==10.5 && price("flashdrive")==0.9;
     }
 
     public boolean quickTest2Passed(){
@@ -300,7 +300,7 @@ public final class PricingEngine {
         System.out.println("ssd"        +"\t\t" +price("ssd"));
         System.out.println("mp3player"  +"\t\t" +price("mp3player"));
 
-        return false;
+        return price("ssd")==12.100000000000001 && price("mp3player")==50.0;
     }
 
     public void processInput(RawInput input){
