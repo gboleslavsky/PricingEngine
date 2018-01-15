@@ -312,6 +312,7 @@ public final class PricingEngine {
 
 
     public static void main(String[] parms){
+        //command line app that accepts input as specified in the spec
         if (!(new PricingEngine().quickTest1Passed() && new PricingEngine().quickTest2Passed())){
             try {
                 throw new Exception("Pricing Engine has bugs");
@@ -322,6 +323,9 @@ public final class PricingEngine {
         PricingEngine pE = new PricingEngine();
         RawInput rawInput = pE.readInput();
         pE.processInput(rawInput);
+
+        //now pE.price("productCode") will return the price
+
     }
 
 
