@@ -299,7 +299,7 @@ public final class PricingEngine {
 
         System.out.println("ssd"        +"\t\t" +price("ssd"));
         System.out.println("mp3player"  +"\t\t" +price("mp3player"));
-        
+
         return false;
     }
 
@@ -312,8 +312,7 @@ public final class PricingEngine {
 
 
     public static void main(String[] parms){
-        PricingEngine testPE = new PricingEngine();
-        if (!(testPE.quickTest1Passed() && testPE.quickTest2Passed())){
+        if (!(new PricingEngine().quickTest1Passed() && new PricingEngine().quickTest2Passed())){
             try {
                 throw new Exception("Pricing Engine has bugs");
             } catch (Exception e) {
