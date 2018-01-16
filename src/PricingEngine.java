@@ -194,9 +194,6 @@ public final class PricingEngine {
     }
 
     private Map<String, SupplyDemand> supplyDemandByProduct = new HashMap<>();
-    public SupplyDemand supplyDemand(String productCode){
-        return supplyDemandByProduct.get(productCode);
-    }
 
     public static final SupplyDemand HH = new SupplyDemand(HIGH, HIGH);
     public static final SupplyDemand HL = new SupplyDemand(HIGH, LOW);
@@ -220,24 +217,35 @@ public final class PricingEngine {
     public static Comparator<Map.Entry<Double, Integer>> priceFrequencyComparator =
         new Comparator<Map.Entry<Double, Integer>>() {
         // recommend most frequently occurring price.
-        // If multiple prices occur frequen
-            // tly, the least amongst them is chosen
-
+        // If multiple prices occur frequently,
+        // the least amongst them is chosen
         public int compare(Map.Entry<Double, Integer> pf1, Map.Entry<Double, Integer> pf2) {
             int prelimResult = pf2.getValue() - pf1.getValue(); //use frequency first
             if (prelimResult == 0)
                 return (int)(pf1.getKey() - pf2.getKey());      //if same frequency, use lowest price
             else
                 return prelimResult;
-
         }};
+
+    public String supplyDemand(String productCode){
+        return supplyDemandByProduct.get(productCode).value();
+    }
 
     public Double price(String productCode){
         Set<Map.Entry<Double, Integer>> priceFrequenciesMap = priceFrequencyByProduct.get(productCode).entrySet();
         List<Map.Entry<Double, Integer>> priceFrequencies = priceFrequenciesMap.stream().collect(Collectors.toList());
         Collections.sort(priceFrequencies, priceFrequencyComparator);
         Double rawPrice = priceFrequencies.get(0).getKey();
-        return rawPrice * (priceMultiplierBySupplyDemand.get(supplyDemandByProduct.get(productCode).value()));
+        return rawPrice * (priceMultiplierBySupplyDemand.get(supplyDemand(productCode)));
+    }
+
+    public String allPrices(){
+        //produces output intended for display on command line
+        String prices = "";
+        for (String productCode : supplyDemandByProduct.keySet()){
+            prices+=(productCode + "\t\t" + price(productCode) + "\n");
+        }
+        return prices;
     }
 
     public boolean quickTest1Passed(){
@@ -300,7 +308,7 @@ public final class PricingEngine {
         System.out.println("ssd"        +"\t\t" +price("ssd"));
         System.out.println("mp3player"  +"\t\t" +price("mp3player"));
 
-        return price("ssd")==12.100000000000001 && price("mp3player")==50.0;
+        return price("ssd")==12.100000000000001 && price("mp3player")==50.0; //&& false
     }
 
     public void processInput(RawInput input){
@@ -313,6 +321,7 @@ public final class PricingEngine {
 
     public static void main(String[] parms){
         //command line app that accepts input as specified in the spec
+        //not using asserts to avoid needless discussions of its pros and cons
         if (!(new PricingEngine().quickTest1Passed() && new PricingEngine().quickTest2Passed())){
             try {
                 throw new Exception("Pricing Engine has bugs");
@@ -320,13 +329,11 @@ public final class PricingEngine {
                 System.exit(1);
             }
         }
+
         PricingEngine pE = new PricingEngine();
         RawInput rawInput = pE.readInput();
         pE.processInput(rawInput);
 
-        //now pE.price("productCode") will return the price
-
+        System.out.println(pE.allPrices());
     }
-
-
 }
