@@ -1,6 +1,6 @@
 # PricingEngine
-A take-home OO oriented interview problem. Did not use any of Java8 features except to conver Map to List since the instructions 
-emphasized OO.
+A take-home OO oriented interview problem. I did not use any of Java8 features except to convert Map to List since the instructions 
+emphasized OO. For extensive use of the functional-like features of Java 8, see the HiveUnit project.
 
 Instructions:
 How we evaluate your code
@@ -14,7 +14,8 @@ Statement of the problem:
 An online retail company conducts market research to competitively price their products.
 Surveyed data contains Product code, Competitor and Price.
  
-The retail company uses a Pricing engine which recommends most frequently occurring price. If multiple prices occur frequently, the least amongst them is chosen.
+The retail company uses a Pricing engine which recommends most frequently occurring price. If multiple prices occur frequently, 
+the least amongst them is chosen.
  
 Products are classified based on parameters like Supply, Demand. Possible values are Low (L), High (H)
  
@@ -25,6 +26,9 @@ If Supply is High and Demand is Low, Product is sold at 5 % less than chosen pri
  
 Prices less than 50% of average price are treated as promotion and not considered.
 Prices more than 50% of average price are treated as data errors and not considered.
+(The above requirement seems wrong since it allows only prices exactly equal to 50% of 
+average and the expected output in the spec is not consistent with that rule. I interpreted 
+that as a typo and used 150% of the average as the indicator of data errors).
 
 Input consists of number of products, followed by each Product's supply and demand parameters.
 followed by number of surveyed prices, followed by competitor prices.
